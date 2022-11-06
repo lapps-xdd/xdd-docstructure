@@ -20,7 +20,7 @@ def outfile_name(number_of_documents):
     dt = datetime.datetime.now()
     timestamp = "%04d%02d%02d-%02d%02d%02d" % (dt.year, dt.month, dt.day,
                                                dt.hour, dt.minute, dt.second)
-    return "../lists/documents-%s-%04d.txt" % (timestamp, number_of_documents)
+    return "../lists/%s-%04d.txt" % (timestamp, number_of_documents)
 
 
 def select_documents(number_of_documents):
