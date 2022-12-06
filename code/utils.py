@@ -1,3 +1,4 @@
+import os
 import re
 from collections import Counter
 
@@ -62,13 +63,14 @@ def larger(x, y):
 def write_scores(fh, tests, scores, add_name=False, print_succes=False):
     """Write the scores that have tests associated with them as html table
     cells, add red background for the cell if the score failed the test."""
-    succes_color = light_green if print_succes else 'white'
+    success_color = light_green if print_succes else 'white'
     for test_name, val in scores.__dict__.items():
         if test_name in tests:
             test = tests[test_name][0]
             threshold_value = tests[test_name][1]
             good = test(val, threshold_value)
-            bgcolor = ' bgcolor="%s"' % succes_color if good else ' bgcolor="%s"' % light_red
+            bg_color = (' bgcolor="%s"' % success_color
+                        if good else ' bgcolor="%s"' % light_red)
             if test_name == 'size':
                 print_val = '%dK' % (val / 1000)
             elif type(val) == float:
@@ -77,7 +79,16 @@ def write_scores(fh, tests, scores, add_name=False, print_succes=False):
                 print_val = str(val)
             if add_name:
                 print_val = '%s=%s' % (test_name, print_val)
-            fh.write('<td align=right%s>%s</td>\n' % (bgcolor, print_val))
+            fh.write('  <td%s align=right>%s</td>\n' % (bg_color, print_val))
+
+
+def trim_filename(name: str) -> str:
+    """Remove the extension (.txt or .json) and the extra suffix added to
+    science parse files."""
+    name = os.path.splitext(name)[0]
+    if name.endswith('_input.pdf'):
+        name = name[:-10]
+    return name
 
 
 def td(cell, alert=False, align=None):
@@ -86,6 +97,7 @@ def td(cell, alert=False, align=None):
     return f'  <td{alignment}{color}>{cell}</td>\n'
 
 
+light_grey = '#EEEEEE'
 light_red = '#FDEDEC'
 light_blue = '#EBF5FB'
 light_green = '#E9F7EF'

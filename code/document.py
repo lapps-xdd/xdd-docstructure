@@ -27,15 +27,19 @@ PARAGRAPH_TESTS = {
 
 class Documents:
 
-    def __init__(self, file_list: str, html_dir: str, text_dir: str, scpa_dir: str, exp=''):
+    def __init__(self, file_list: str, html_dir: str, exp=''):
         self.html_dir = html_dir
         self.documents = []
         with open(file_list) as fh:
+            text_dir = fh.readline().split()[2]
+            scpa_dir = fh.readline().split()[2]
+            print('TEXT', text_dir)
+            print('SCPA', scpa_dir)
             for line in fh:
                 if exp in line:
-                    text_file = line.strip()
-                    scpa_file = "%s_input.pdf.json" % text_file[:-4]
-                    name = text_file[:-4]
+                    name = line.strip()
+                    text_file = "%s.txt" % name
+                    scpa_file = "%s_input.pdf.json" % name
                     text_path = os.path.join(text_dir, text_file)
                     scpa_path = os.path.join(scpa_dir, scpa_file)
                     doc = Document(name, text_path, scpa_path)
@@ -78,7 +82,7 @@ class Documents:
         """Print the iframe with the first document to the index file."""
         first_document = self.documents[0]
         first_doc_url = f"{first_document.name}.html"
-        first_doc_scpa_url = first_document.scpa_file
+        # first_doc_scpa_url = first_document.scpa_file
         size = 'height="100%%" width="100%%"'
         fh.write('  <td valign="top" width="*" height="100%">\n')
         fh.write('    <iframe src="%s" %s name="doc"></iframe>\n' % (first_doc_url, size))
@@ -194,7 +198,7 @@ class Document:
         fh.write(f'    <a href="{self.text_file}" target="doc">text</a>\n')
         fh.write(f'    <a href="{self.scpa_file}" target="doc">scpa</a>\n')
         fh.write(f'  </td>\n')
-        size = int((len(self)/1000))
+        # size = int((len(self)/1000))
         utils.write_scores(fh, self.tests, self.scores)
         fh.write(utils.td("&#10003;" if self.has_abstract() else "&nbsp;"))
         fh.write(utils.td("&#10003;" if self.has_abstract_scpa() else "&nbsp;"))
@@ -290,11 +294,11 @@ class Paragraph:
         fh.write('<p style="%s">%s</p>\n' % (style, content))
 
     def write_characteristics(self, fh):
-        def color_mark(doc):
-            return '' if doc.is_useful() else f' bgcolor="{utils.light_red}"'
+        # def color_mark(doc):
+        #     return '' if doc.is_useful() else f' bgcolor="{utils.light_red}"'
         fh.write('<table cellspacing=0 cellpadding=5 border=1>\n')
         fh.write('<tr>\n')
-        bg_color = 'bgcolor="#eee"'
+        bg_color = 'bgcolor="%s"' % utils.light_grey
         fh.write(f'  <td {bg_color}>size={len(self)}</td>\n')
         fh.write(f'  <td {bg_color}>lines={self.line_count}</td>\n')
         fh.write(f'  <td {bg_color}>tokens={self.token_count}</td>\n')

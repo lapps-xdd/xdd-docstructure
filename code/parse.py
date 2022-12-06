@@ -1,16 +1,16 @@
 """Minimal document structure parsing
 
-Mostly geared at extracting abstracts from unstructured xDD text, but also
-characterizes the entire document and individual paragraphs.
+Mostly aimed at extracting abstracts from unstructured xDD text, but also at
+characterizing the entire document and individual paragraphs.
 
 Usage:
 $ python3 parse ../lists/FILENAME
 $ python3 parse ../lists
 
-FILENAME is a file created by the select.py script, it contains a list of
-filenames. In the second invocation all files in the lists directory are
-used. Output is written to directories in ../out, with the directory name
-taken from the file list.
+FILENAME is a file created by the select.py script, it contains the locations
+of the raw text and ScienceParse directories and a list of filenames. In the
+second invocation all files in the lists directory are used. Output is written
+to directories in ../out, with the directory name taken from the file list.
 
 The following are calculated:
 
@@ -26,20 +26,13 @@ Does not do stand-off annotation of the text.
 
 """
 
-import os, sys
-
+import os, sys, glob
 from document import Documents
-
-TEXT_DIR = '/Users/Shared/data/xdd/doc2vec/xdd-covid-19-8Dec-doc2vec_text'
-SCPA_DIR = '/Users/Shared/data/xdd/doc2vec/xdd-covid-19-8Dec-scienceparse/scienceparse'
 
 
 if __name__ == '__main__':
 
-    import glob
-    file_list = sys.argv[1]
     file_spec = sys.argv[1]
-
     if os.path.isdir(file_spec):
         file_lists = glob.glob(os.path.join(file_spec, '*.txt'))
     else:
@@ -47,5 +40,5 @@ if __name__ == '__main__':
 
     for file_list in file_lists:
         html_dir = os.path.join('../out', os.path.splitext(os.path.basename(file_list))[0])
-        docs = Documents(file_list, html_dir, TEXT_DIR, SCPA_DIR, exp='')
+        docs = Documents(file_list, html_dir, exp='')
         docs.write_html()
