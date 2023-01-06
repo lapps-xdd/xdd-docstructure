@@ -1,6 +1,12 @@
-import os
-import re
+import re, datetime
+from pathlib import Path
 from collections import Counter
+
+
+def timestamp():
+    dt = datetime.datetime.now()
+    return "%04d%02d%02d-%02d%02d%02d" % (dt.year, dt.month, dt.day,
+                                          dt.hour, dt.minute, dt.second)
 
 
 def run_tests(tests: dict, scores) -> bool:
@@ -60,6 +66,11 @@ def larger(x, y):
     return x > y
 
 
+def between(x: int, pair: tuple):
+    minimal_value, maximum_value = pair
+    return minimal_value < x < maximum_value
+
+
 def write_scores(fh, tests, scores, add_name=False, print_succes=False):
     """Write the scores that have tests associated with them as html table
     cells, add red background for the cell if the score failed the test."""
@@ -82,13 +93,20 @@ def write_scores(fh, tests, scores, add_name=False, print_succes=False):
             fh.write('  <td%s align=right>%s</td>\n' % (bg_color, print_val))
 
 
-def trim_filename(name: str) -> str:
-    """Remove the extension (.txt or .json) and the extra suffix added to
-    science parse files."""
-    name = os.path.splitext(name)[0]
-    if name.endswith('_input.pdf'):
-        name = name[:-10]
+def trim_filename(name: str, extension: str = '') -> str:
+    """Remove the extension an extension from the file name. In the context of
+    current data this will be .txt for the text files and _input.pdf.json for
+    the science parse files."""
+    if name.endswith(extension):
+        name = name[:-len(extension)]
     return name
+
+
+def strip_extensions(file_name):
+    fname = Path(file_name)
+    while fname.suffix:
+        fname = fname.with_suffix('')
+    return fname
 
 
 def td(cell, alert=False, align=None):

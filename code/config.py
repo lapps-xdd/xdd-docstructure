@@ -1,23 +1,49 @@
 """Configuration settings
 
+This is all about access to data locations.
+
 """
 
 import os
 
-BASE_DIR = '/Users/Shared/data/xdd/doc2vec'
+DATA_DIR = 'data'
+DOMAINS = ['103k', 'bio', 'geo', 'mol']
+DATA_TYPES = ['text', 'scpa', 'proc']
 
-TEXT_103K = os.path.join(BASE_DIR, 'xdd-covid-19-8Dec-doc2vec_text')
-TEXT_BIO = os.path.join(BASE_DIR, 'topic_doc2vecs/biomedical/text')
-TEXT_GEO = os.path.join(BASE_DIR, 'topic_doc2vecs/geoarchive/text')
-TEXT_MOL = os.path.join(BASE_DIR, 'topic_doc2vecs/molecular_physics/text')
+DATA = {
+    '103k': { 'text': 'xdd-covid-19-8Dec-doc2vec_text',
+              'scpa': 'xdd-covid-19-8Dec-scienceparse/scienceparse',
+              'proc': 'xdd-covid-19-8Dec-processed' },
+    'bio': { 'text': 'topic_doc2vecs/biomedical/text',
+             'scpa': 'topic_doc2vecs/biomedical/scienceparse',
+             'proc': 'topic_doc2vecs/biomedical/processed' },
+    'geo': { 'text': 'topic_doc2vecs/geoarchive/text',
+             'scpa': 'topic_doc2vecs/geoarchive/scienceparse',
+             'proc': 'topic_doc2vecs/geoarchive/processed' },
+    'mol': { 'text': 'topic_doc2vecs/molecular_physics/text',
+             'scpa': 'topic_doc2vecs/molecular_physics/scienceparse',
+             'proc': 'topic_doc2vecs/molecular_physics/processed' }}
 
-SCPA_103K = os.path.join(BASE_DIR, 'xdd-covid-19-8Dec-scienceparse/scienceparse')
-SCPA_BIO = os.path.join(BASE_DIR, 'topic_doc2vecs/biomedical/scienceparse')
-SCPA_GEO = os.path.join(BASE_DIR, 'topic_doc2vecs/geoarchive/scienceparse')
-SCPA_MOL = os.path.join(BASE_DIR, 'topic_doc2vecs/molecular_physics/scienceparse')
 
-TEXT_DIRS = [TEXT_103K, TEXT_BIO, TEXT_GEO, TEXT_MOL]
-SCPA_DIRS = [SCPA_103K, SCPA_BIO, SCPA_GEO, SCPA_MOL]
+def location(domain, data_type):
+    return os.path.join(DATA_DIR, DATA[domain][data_type])
 
-TEXT_DIRS_IDX = { '103k': TEXT_103K, 'bio': TEXT_BIO, 'geo': TEXT_GEO, 'mol': TEXT_MOL, }
-SCPA_DIRS_IDX = { '103k': SCPA_103K, 'bio': SCPA_BIO, 'geo': SCPA_GEO, 'mol': SCPA_MOL, }
+
+def text_directories():
+    return [location(domain, 'text') for domain in DOMAINS]
+
+
+def scpa_directories():
+    return [location(domain, 'scpa') for domain in DOMAINS]
+
+
+def text_directories_idx():
+    return { domain: location(domain, 'text') for domain in DOMAINS }
+
+
+def scpa_directories_idx():
+    return { domain: location(domain, 'scpa') for domain in DOMAINS }
+
+
+def proc_directories_idx():
+    return { domain: location(domain, 'proc') for domain in DOMAINS }

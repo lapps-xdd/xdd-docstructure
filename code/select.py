@@ -3,13 +3,13 @@
 This selects a number of random documents from the sample of 103K XDD documents
 or one of the 10-14K topic domains.
 
-$ python3 select.py DOMAIN N
+$ python3 --data DIR select.py DOMAIN N
 
-DOMAIN is one of '103k', 'bio', 'geo' or 'mol'
-N is an integer
+    DOMAIN is one of '103k', 'bio', 'geo' or 'mol'
+    N is an integer
 
 The locations of the data drops are defined in the config module, in particular
-in the BASE_DIR variable.
+in the BASE_DIR variable, use the --data option to overrule the config settings.
 
 The selection is made from the text documents and the .txt extension if there
 is one is stripped off.
@@ -20,6 +20,7 @@ its contents will look like:
 
 # TEXT /Users/Shared/data/xdd/doc2vec/topic_doc2vecs/biomedical/text
 # SCPA /Users/Shared/data/xdd/doc2vec/topic_doc2vecs/biomedical/scienceparse
+# PROC /Users/Shared/data/xdd/doc2vec/topic_doc2vecs/biomedical/processed
 63447e8e74bed2df5c47cb08
 5be55aeccf58f163e6a2d563
 622af1352688b71135605c55
@@ -28,24 +29,27 @@ its contents will look like:
 
 """
 
-import os, sys, random, datetime
+import os, random, argparse
 import config
+import utils
 
-CORPORA = { '103k': (config.TEXT_103K, config.SCPA_103K),
-            'bio': (config.TEXT_BIO, config.SCPA_BIO),
-            'geo': (config.TEXT_GEO, config.SCPA_GEO),
-            'mol': (config.TEXT_MOL, config.SCPA_MOL) }
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Select xDD files')
+    parser.add_argument('domain', help="domain to select from")
+    parser.add_argument('count', help="number of documents to select")
+    parser.add_argument('--data', help="data directory, default is 'data'")
+    return parser.parse_args()
 
 
 def outfile_name(domain: str, number_of_documents: int):
-    dt = datetime.datetime.now()
-    timestamp = "%04d%02d%02d-%02d%02d%02d" % (dt.year, dt.month, dt.day,
-                                               dt.hour, dt.minute, dt.second)
+    timestamp = utils.timestamp()
     return "../lists/%s-%s-%04d.txt" % (domain, timestamp, number_of_documents)
 
 
 def select_documents(number_of_documents: int, domain: str):
-    fnames = os.listdir(CORPORA[domain][0])
+    fnames = os.listdir(config.location(domain, "text"))
     selected_indices = set()
     selected_documents = set()
     while len(selected_indices) < number_of_documents:
@@ -59,14 +63,17 @@ def select_documents(number_of_documents: int, domain: str):
 
 if __name__ == '__main__':
 
-    selected_domain = sys.argv[1]
-    n = int(sys.argv[2])
-
-    docs = select_documents(n, selected_domain)
-    outfile = outfile_name(selected_domain, n)
+    args = parse_args()
+    print(config.DATA_DIR)
+    print(args)
+    if args.data:
+        config.DATA_DIR = args.data
+    docs = select_documents(int(args.count), args.domain)
+    outfile = outfile_name(args.domain, int(args.count))
     with open(outfile, 'w') as fh:
-        fh.write(f'# TEXT {CORPORA[selected_domain][0]}\n')
-        fh.write(f'# SCPA {CORPORA[selected_domain][1]}\n')
+        fh.write(f'# TEXT\t{os.path.abspath(config.location(args.domain, "text"))}\n')
+        fh.write(f'# SCPA\t{os.path.abspath(config.location(args.domain, "scpa"))}\n')
+        fh.write(f'# PROC\t{os.path.abspath(config.location(args.domain, "proc"))}\n')
         for doc in docs:
             print(doc)
             fh.write("%s\n" % doc)
