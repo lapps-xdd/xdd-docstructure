@@ -56,12 +56,12 @@ $ unzip xdd-covid-19-8Dec-scienceparse.zip
 
 ## Usage
 
-Run all code from the code directory.
+First change the working directory to the code directory.
 
 To run the parser on a domain:
 
 ```bash
-$ python --domain DOMAIN --limit N --data DIR
+$ python parse.py --domain DOMAIN --limit N --data DIR
 ```
 
 Here, DOMAIN is one of '103k', 'bio', 'geo' and 'mol'. The --limit option sets a limit to the number of documents processed and --data allows you to overrule the default in the `config.py` file. Where the output is printed depends on the domain:
