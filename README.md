@@ -2,7 +2,7 @@
 
 Code to analyze and filter xDD documents. Instructions here are for Linux/OSX.
 
-Requirements are Python 3.8 or higher (Python 3.7 will probably work).
+Use Python 3.8 or higher, no non-standard modules are needed.
 
 ## Data setup
 
