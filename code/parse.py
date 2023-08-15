@@ -7,14 +7,14 @@ Takes output from ScienceParse and heuristics on the raw text and weighs its
 options.
 
 Usage in production mode:
-$ python3 parse --domain DOMAIN --limit N --data DIR
+$ python3 parse.py --domain DOMAIN --limit N --data DIR
 
 Process a maximum on N documents from the domain and write output to a subdirectory
 of DIR, if --data is not used then the default from the config file will be used.
 
 Usage in demo mode:
-$ python3 parse --list ../lists/FILENAME
-$ python3 parse --lists ../lists
+$ python3 parse.py --list ../lists/FILENAME
+$ python3 parse.py --lists ../lists
 
 FILENAME is a file created by the select.py script, it contains the locations
 of the raw text and ScienceParse directories and a list of filenames. In the
@@ -104,7 +104,9 @@ def parse_files_in_domain(domain: str, limit=sys.maxsize):
     # In production mode we only write JSON output, and we write it to
     # the output directories specified in the config module
     file_list = generate_file_list_from_domain(domain)
-    docs = Documents(file_list, '', config.proc_directories_idx()[domain])
+    out_dir = config.proc_directories_idx()[domain]
+    print(f'>>> Writing results to {out_dir}')
+    docs = Documents(file_list, '', out_dir)
     docs.write_output(limit=limit)
 
 
@@ -119,7 +121,7 @@ def generate_file_list_from_domain(domain: str):
         for name in sorted(fnames_text):
             if name.endswith('.txt') and len(name) == 28:
                 fh.write(f'{name[:-4]}\n')
-        print(f'Generated {file_list} with {len(fnames_text):,} entries')
+        print(f'>>> Generated {file_list} with {len(fnames_text):,} entries')
     return file_list
 
 
