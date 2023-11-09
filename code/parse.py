@@ -1,45 +1,43 @@
 """Minimal document structure parsing
 
-Mostly aimed at extracting abstracts and other elements from unstructured xDD
-text, but also at characterizing the entire document and individual paragraphs.
+Mostly aimed at extracting abstracts and other elements from unstructured xDD text,
+but also at characterizing the entire document and individual paragraphs.
 
-Takes output from ScienceParse and heuristics on the raw text and weighs its
-options.
+Takes output from ScienceParse and heuristics on the raw text and weighs its options.
 
 Usage in production mode:
-$ python3 parse.py --domain DOMAIN --limit N --data DIR
+$ python3 parse.py -i DATA_DIRECTORY -o OUTPUT_DIRECTORY --limit N
 
-Process a maximum on N documents from the domain and write output to a subdirectory
-of DIR, if --data is not used then the default from the config file will be used.
+Process a maximum on N documents from DATA_DIRECTORY. Write output to a subdirectory
+of DATA_DIRECTORY, by default this is "output/doc", but this can be overwritten with
+the -o option, where OUTPUT_DIRECTORY is a relative path within DATA_DIRECTORY.
 
 Usage in demo mode:
 $ python3 parse.py --list ../lists/FILENAME
-$ python3 parse.py --lists ../lists
 
-FILENAME is a file created by the select.py script, it contains the locations
-of the raw text and ScienceParse directories and a list of filenames. In the
-second invocation all files in the lists directory are used. Output is written
-to directories in ../out, with the directory name taken from the file list.
+FILENAME is a file created by the select.py script, it contains the locations of the
+raw text and ScienceParse directories and a list of filenames. In the second invocation
+all files in the lists directory are used. Output is written to directories in ../out,
+with the directory name taken from the file list.
 
 See the README.md file for more details.
 
 The following are calculated:
 
-- A language score for the entire document and all paragraphs, this is a
-  measure between 0 and 1 that encodes what percentage of a sequence of
-  tokens is in a dictionary of frequent English words.
-- A ratio of occurrences of the string 'medRxiv' over the number of paragraphs
-  of a document. A larger number tends to indicate a list of abstracts.
-- The average token length of a paragraph. Lower than 4 usually indicates
-  that the text is some kind of listing.
-- The average line length of a paragraph. Lower than 10 usually indicate that
-  the paragraph is not running text.
-- Singletons per token. If this is larger than 0.1 than the text is usually made
-  up of a lot of single characters or numbers.
-- Number of sections of ScienceParse output and the average length of those
+- A language score for the entire document and all paragraphs, this is a measure between
+  0 and 1 that encodes what percentage of a sequence of tokens is in a dictionary of 
+  frequent English words.
+- A ratio of occurrences of the string 'medRxiv' over the number of paragraphs of a
+  document. A larger number tends to indicate a list of abstracts.
+- The average token length of a paragraph. Lower than 4 usually indicates that the text
+  is some kind of listing.
+- The average line length of a paragraph. Lower than 10 usually indicate that the
+  paragraph is not running text.
+- Singletons per token. If this is larger than 0.1 than the text is usually made up of a
+  lot of single characters or numbers.
+- Number of sections of ScienceParse output and the average length of those sections.
+- Ratio of the number of headings in the output of ScienceParse to the total number of
   sections.
-- Ratio of the number of headings in the output of ScienceParse to the total
-  number of sections.
 
 Does not do stand-off annotation of the text.
 
@@ -57,21 +55,11 @@ from document import Documents
 
 
 def parse_args():
-    domain_help = \
-        ('Parse all files in the domain where domain is one of 103k, bio, geo and mol. '
-         'Does not generate html files and uses the specifications in the config module '
-         'to determine where the output goes.')
-    data_help = \
-        ("Data location, the default is 'data' (in the code directory), which could be "
-         "a symbolic link. This is only relevant when using the --domain option because "
-         "list files include the data directories.")
-    parser = argparse.ArgumentParser(
-        description='Parse xDD files')
+    parser = argparse.ArgumentParser(description='Parse xDD files')
+    parser.add_argument('-i', help="source directory")
+    parser.add_argument('-o', help="output directory within source directory", default='output/doc')
     parser.add_argument('--list', help="Use list of files")
-    parser.add_argument('--lists', help="Use a directory with lists of files")
-    parser.add_argument('--domain', help=domain_help)
     parser.add_argument('--limit', help="Maximum number of documents to process for a domain")
-    parser.add_argument('--data', help=data_help)
     return parser.parse_args()
 
 
@@ -89,35 +77,23 @@ def parse_files_in_list(file_list: str, index=True):
         Documents.write_html_index('../out/html')
 
 
-def parse_files_in_lists(directory: str):
-    """Parse all files in all file list in the directory and create html and json
-    files for those files in the ../out/html/<subdir> and ../out/data/<subdir>
-    directories, where <subdir> is the name of the data set, something like
-    bio-20221208-154439-0025."""
-    file_lists = glob.glob(os.path.join(directory, '*.txt'))
-    for file_list in file_lists:
-        parse_files_in_list(file_list, index=False)
-    Documents.write_html_index('../out/html')
-
-
-def parse_files_in_domain(domain: str, limit=sys.maxsize):
-    # In production mode we only write JSON output, and we write it to
-    # the output directories specified in the config module
-    file_list = generate_file_list_from_domain(domain)
-    out_dir = config.proc_directories_idx()[domain]
-    print(f'>>> Writing results to {out_dir}')
-    docs = Documents(file_list, '', out_dir)
+def parse_files_in_directory(indir: str, outdir='output/doc', limit=sys.maxsize):
+    # In production mode we only write JSON output, and by default we write it to
+    # the output/doc directory within the input directory.
+    file_list = generate_filelist(indir)
+    print(f'>>> Writing results to {indir}/{outdir}')
+    docs = Documents(file_list, '', os.path.join(indir, outdir))
     docs.write_output(limit=limit)
 
 
-def generate_file_list_from_domain(domain: str):
-    """Generate a file list for the domain and return the location of the list."""
-    file_list = f"filelist-{domain}.txt"
+def generate_filelist(directory: str):
+    """Generate a file list for the directory and return the location of the list."""
+    file_list = f"filelist-{os.path.basename(directory)}.txt"
     with open(file_list, 'w') as fh:
-        fh.write(f'# TEXT\t{config.location(domain, "text")}\n')
-        fh.write(f'# SCPA\t{config.location(domain, "scpa")}\n')
-        fh.write(f'# PROC\t{config.location(domain, "proc")}\n')
-        fnames_text = os.listdir(config.location(domain, 'text'))
+        fh.write(f'# TEXT\t{directory}/text\n')
+        fh.write(f'# SCPA\t{directory}/scpa\n')
+        fh.write(f'# PROC\t{directory}/output/doc\n')
+        fnames_text = os.listdir(os.path.join(directory, 'text'))
         for name in sorted(fnames_text):
             if name.endswith('.txt') and len(name) == 28:
                 fh.write(f'{name[:-4]}\n')
@@ -125,15 +101,12 @@ def generate_file_list_from_domain(domain: str):
     return file_list
 
 
+
 if __name__ == '__main__':
 
     args = parse_args()
-    if args.data:
-        config.DATA_DIR = args.data
-    if args.list:
-        parse_files_in_list(args.list)
-    elif args.lists:
-        parse_files_in_lists(args.lists)
-    elif args.domain:
+    if args.i:
         limit = int(args.limit) if args.limit else sys.maxsize
-        parse_files_in_domain(args.domain, limit=limit)
+        parse_files_in_directory(args.i, args.o, limit=limit)
+    elif args.list:
+        parse_files_in_list(args.list)

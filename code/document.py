@@ -36,14 +36,12 @@ class Documents:
         """Initialize with a file list, an output directory for the html analysis
         view and an output directory for the processed and filtered data."""
         self.html_dir = html_dir
+        # NOTE: this is not really needed since we get proc_dir from the file list
         self.data_dir = data_dir
         fh = open(file_list)
         self.text_dir = fh.readline().split()[2]
         self.scpa_dir = fh.readline().split()[2]
         self.proc_dir = fh.readline().split()[2]
-        print('TEXT', self.text_dir)
-        print('SCPA', self.scpa_dir)
-        print('PROC ', self.proc_dir)
         self.names = [name.strip() for name in fh]
         self.documents = (self.make_doc(name) for name in self.names)
 
@@ -58,7 +56,6 @@ class Documents:
         return Document(name, text_path, scpa_path)
 
     def write_output(self, limit=sys.maxsize):
-        print('DATA', self.data_dir)
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
         count = 0
