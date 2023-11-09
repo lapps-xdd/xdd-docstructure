@@ -4,74 +4,38 @@ Code to analyze and filter xDD documents. Instructions here are for Linux/OSX.
 
 Use Python 3.8 or higher, no non-standard modules are needed.
 
+
 ## Data setup
 
-The code here assume three data drops from the University of Wisconsin:
-
-- xdd-covid-19-8Dec-doc2vec_text.zip
-- xdd-covid-19-8Dec-scienceparse.zip
-- topic_doc2vecs.zip
-
-The first two have the raw text and ScienceParse results for a 103K COVID-related documents, the third contains raw text and ScienceParse results for three domains (10K each for biomedical, geoarchive and molecular_physics). Put these in a separate directory:
-
-```bash
-$ mkdir data
-$ cp *.zip data
-```
-
-Now unpack the three zips, they are structured differently so their are minor differences in how you do that. What you want to end up with to use this document structure code is the following directory structure:
+The code here assumes an input data directory with the following top-level structure:
 
 ```
-.
-├── topic_doc2vecs
-│   ├── biomedical
-│   │   ├── scienceparse
-│   │   └── text
-│   ├── geoarchive
-│   │   ├── scienceparse
-│   │   └── text
-│   └── molecular_physics
-│       ├── scienceparse
-│       └── text
-├── xdd-covid-19-8Dec-doc2vec_text
-└── xdd-covid-19-8Dec-scienceparse
-    └── scienceparse
+some_directory
+├── metadata.json
+├── scienceparse
+└── text
 ```
 
-This can be done with the following sequence of commands:
+The `scienceparse` directory contains the results of running science parse over a set of PDFs and the `text` directory has the results of a simple text extract from the PDF files. The contains metadata for all files, it is only relevant for later processing and is not used for document structure parsing.
 
-```bash
-$ cd data
-$ unzip topic_doc2vecs.zip
-$ mkdir xdd-covid-19-8Dec-doc2vec_text
-$ cp xdd-covid-19-8Dec-doc2vec_text.zip xdd-covid-19-8Dec-doc2vec_text
-$ cd xdd-covid-19-8Dec-doc2vec_text
-$ unzip xdd-covid-19-8Dec-doc2vec_text.zip
-$ cd ..
-$ mkdir xdd-covid-19-8Dec-scienceparse
-$ cp xdd-covid-19-8Dec-scienceparse.zip xdd-covid-19-8Dec-scienceparse
-$ cd xdd-covid-19-8Dec-scienceparse
-$ unzip xdd-covid-19-8Dec-scienceparse.zip
-```
 
 ## Usage
 
-First change the working directory to the code directory.
-
-To run the parser on a domain:
+First change the working directory to the code directory, then run the document structure parser on a directory:
 
 ```bash
-$ python parse.py --domain DOMAIN --limit N --data DIR
+$ python parse.py -i DATA_DIRECTORY -o OUTPUT --limit N
 ```
 
-Here, DOMAIN is one of '103k', 'bio', 'geo' and 'mol'. The --limit option sets a limit to the number of documents processed and --data allows you to overrule the default in the `config.py` file. Where the output is printed depends on the domain:
+The parse.py script reads files from `text` and `scienceparse` and writes output to `${DATA_DIRECTORY}/output/doc`. The relative path within the data directory can be changed with the -o option. The --limit option sets a limit to the number of documents processed.
 
-| domain | output directory                                       |
-| ------ | ------------------------------------------------------ |
-| 103k   | DATA_DIR/xdd-covid-19-8Dec-processed/                  |
-| bio    | DATA_DIR/topic\_doc2vecs/biomedical/processed/         |
-| geo    | DATA_DIR/topic\_doc2vecs/geoarchive/processed/         |
-| mol    | DATA_DIR/topic\_doc2vecs/molecular\_physics/processed/ |
+<!--
+
+TODO: make a mini directory with three files with shrink.py and print tree representations of input and output.
+
+-->
+
+<!--
 
 In development mode you can run the parser on small random subsets of the domains and view an HTML version of the output. For this you first create a list in the `lists` directory:
 
@@ -86,3 +50,4 @@ $ python parse.py --list ../lists/FILE_LIST
 ```
 
 Results are written to `../out/data`, which has the same output as produced when running the document parser on a domain,  and `../out/html`, which contains an `index.html` file as a top-level page.
+-->

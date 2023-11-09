@@ -40,15 +40,14 @@ class Documents:
         fh = open(file_list)
         self.text_dir = fh.readline().split()[2]
         self.scpa_dir = fh.readline().split()[2]
-        self.proc_dir = fh.readline().split()[2]
-        print('TEXT', self.text_dir)
-        print('SCPA', self.scpa_dir)
-        print('PROC ', self.proc_dir)
         self.names = [name.strip() for name in fh]
         self.documents = (self.make_doc(name) for name in self.names)
 
     def __iter__(self):
         return iter(self.documents)
+
+    def __str__(self):
+        return f'<Documents {self.data_dir}>'
 
     def make_doc(self, name):
         text_file = "%s.txt" % name
@@ -57,15 +56,12 @@ class Documents:
         scpa_path = os.path.join(self.scpa_dir, scpa_file)
         return Document(name, text_path, scpa_path)
 
-    def write_output(self, limit=sys.maxsize):
-        print('DATA', self.data_dir)
+    def write_output(self):
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
         count = 0
         for doc in self:
             count += 1
-            if count > limit:
-                break
             if count % 100 == 0:
                 print(count)
             doc.write_data(self.data_dir)
