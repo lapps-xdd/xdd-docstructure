@@ -6,11 +6,10 @@ but also at characterizing the entire document and individual paragraphs.
 Takes output from ScienceParse and heuristics on the raw text and weighs its options.
 
 Usage in production mode:
-$ python3 parse.py -i DATA_DIRECTORY -o OUTPUT_DIRECTORY --limit N
+$ python3 parse.py --scpa DIR1 --text DIR2 --out DIR3 --limit N
 
-Process a maximum on N documents from DATA_DIRECTORY. Write output to a subdirectory
-of DATA_DIRECTORY, by default this is "output/doc", but this can be overwritten with
-the -o option, where OUTPUT_DIRECTORY is a relative path within DATA_DIRECTORY.
+Process a maximum on N documents from the ScienceParse (DIR1) and text (DIR2) directories
+and write output to DIR3.
 
 Usage in demo mode:
 $ python3 parse.py --list ../lists/FILENAME
@@ -54,12 +53,18 @@ import config
 from document import Documents
 
 
+# File with all files to process, with their locations, will be created below
+FILE_LIST = "filelist.txt"
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description='Parse xDD files')
-    parser.add_argument('-i', help="source directory")
-    parser.add_argument('-o', help="output directory within source directory", default='output/doc')
+    parser = argparse.ArgumentParser(description='Parse xDD document structure')
+    parser.add_argument('--scpa', help="scienceparse directory")
+    parser.add_argument('--text', help="text directory")
+    parser.add_argument('--out', help="output directory")
     parser.add_argument('--list', help="Use list of files")
-    parser.add_argument('--limit', help="Maximum number of documents to process for a domain")
+    parser.add_argument('--limit', help="Maximum number of documents to process",
+                        type=int, default=sys.maxsize)
     return parser.parse_args()
 
 
@@ -67,6 +72,7 @@ def parse_files_in_list(file_list: str, index=True):
     """Parse all files in the file list and create html and json files for those
     files in the ../out/html/<subdir> and ../out/data/<subdir> directories, where
     <subdir> is the name of the data set, something like bio-20221208-154439-0025."""
+    # TODO: needs to be updated
     subdir = os.path.splitext(os.path.basename(file_list))[0]
     html_dir = os.path.join('../out/html', subdir)
     data_dir = os.path.join('../out/data', subdir)
@@ -77,36 +83,32 @@ def parse_files_in_list(file_list: str, index=True):
         Documents.write_html_index('../out/html')
 
 
-def parse_files_in_directory(indir: str, outdir='output/doc', limit=sys.maxsize):
+def parse_files_in_directory(scpa: str, text: str, out: str, limit=sys.maxsize):
     # In production mode we only write JSON output, and by default we write it to
     # the output/doc directory within the input directory.
-    file_list = generate_filelist(indir)
-    print(f'>>> Writing results to {indir}/{outdir}')
-    docs = Documents(file_list, '', os.path.join(indir, outdir))
-    docs.write_output(limit=limit)
+    generate_filelist(scpa, text, out, limit)
+    print(f'>>> Writing results to {out}')
+    docs = Documents(FILE_LIST, '', out)
+    docs.write_output()
 
 
-def generate_filelist(directory: str):
-    """Generate a file list for the directory and return the location of the list."""
-    file_list = f"filelist-{os.path.basename(directory)}.txt"
-    with open(file_list, 'w') as fh:
-        fh.write(f'# TEXT\t{directory}/text\n')
-        fh.write(f'# SCPA\t{directory}/scpa\n')
-        fh.write(f'# PROC\t{directory}/output/doc\n')
-        fnames_text = os.listdir(os.path.join(directory, 'text'))
+def generate_filelist(scpa: str, text: str, out: str, limit=sys.maxsize):
+    """Generate a list with input files and their location and save it in FILE_LIST."""
+    with open(FILE_LIST, 'w') as fh:
+        fh.write(f'# TEXT\t{text}\n')
+        fh.write(f'# SCPA\t{scpa}\n')
+        fnames_text = [f for f in os.listdir(text) if f.endswith('.txt')][:limit]
         for name in sorted(fnames_text):
             if name.endswith('.txt') and len(name) == 28:
                 fh.write(f'{name[:-4]}\n')
-        print(f'>>> Generated {file_list} with {len(fnames_text):,} entries')
-    return file_list
+        print(f'>>> Generated {FILE_LIST} with {len(fnames_text):,} entries')
 
 
 
 if __name__ == '__main__':
 
     args = parse_args()
-    if args.i:
-        limit = int(args.limit) if args.limit else sys.maxsize
-        parse_files_in_directory(args.i, args.o, limit=limit)
-    elif args.list:
+    if args.list:
         parse_files_in_list(args.list)
+    else:
+        parse_files_in_directory(args.scpa, args.text, args.out, args.limit)
