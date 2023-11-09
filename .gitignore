@@ -1,6 +1,8 @@
 *~
 *pyc
 data
+filelist.txt
 filelist-*txt
 .DS_Store
 .idea
+backup.sh
