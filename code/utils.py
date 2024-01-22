@@ -1,4 +1,4 @@
-import re, datetime
+import os, re, datetime
 from pathlib import Path
 from collections import Counter
 
@@ -7,6 +7,11 @@ def timestamp():
     dt = datetime.datetime.now()
     return "%04d%02d%02d-%02d%02d%02d" % (dt.year, dt.month, dt.day,
                                           dt.hour, dt.minute, dt.second)
+
+
+def basename(path: str):
+    """Like os.path.basename, but also splits off the extension."""
+    return os.path.splitext(os.path.basename(path))[0]
 
 
 def run_tests(tests: dict, scores) -> bool:

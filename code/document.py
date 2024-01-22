@@ -37,17 +37,17 @@ class Documents:
         view and an output directory for the processed and filtered data."""
         self.html_dir = html_dir
         self.data_dir = data_dir
-        fh = open(file_list)
-        self.text_dir = fh.readline().split()[2]
-        self.scpa_dir = fh.readline().split()[2]
-        self.names = [name.strip() for name in fh]
+        with open(file_list) as fh:
+            self.text_dir = fh.readline().split()[2]
+            self.scpa_dir = fh.readline().split()[2]
+            self.names = [name.strip() for name in fh if not name.startswith('#')]
         self.documents = (self.make_doc(name) for name in self.names)
 
     def __iter__(self):
         return iter(self.documents)
 
     def __str__(self):
-        return f'<Documents {self.data_dir}>'
+        return f'<Documents data_dir={self.data_dir} size={len(self.names)}>'
 
     def make_doc(self, name):
         text_file = "%s.txt" % name

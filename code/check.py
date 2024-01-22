@@ -1,16 +1,17 @@
 """Data set checks
 
-Compares the raw text and ScienceParse json files from the following data sets:
+Usage:
 
-- The 104K data drop from September 2022
-- The three 10-14K data drops for three domains from December 2022
+$ python check DATA_DIRECTORY
+
+Compares the raw text and ScienceParse json files from the given directory. Assumes
+that there are directories DATA_DIRECTORY/text and DATA_DIRECTORY/scienceparse
 
 Also checks whether all file names have the standard length.
 
 """
 
-import os
-import config
+import os, sys
 from utils import trim_filename
 
 STANDARD_FILENAME_LENGTH = 24
@@ -38,6 +39,7 @@ def check_directories(text_dir: str, scpa_dir: str):
 
 if __name__ == '__main__':
 
-    zipped_dirs = zip(config.text_directories(), config.scpa_directories())
-    for text_directory, scpa_directory in zipped_dirs:
-        check_directories(text_directory, scpa_directory)
+    data_directory = sys.argv[1]
+    text_directory = os.path.join(data_directory, 'text')
+    scpa_directory = os.path.join(data_directory, 'scienceparse')
+    check_directories(text_directory, scpa_directory)
