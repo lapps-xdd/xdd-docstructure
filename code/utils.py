@@ -24,14 +24,15 @@ def run_tests(tests: dict, scores) -> bool:
             test = tests[test_name][0]
             threshold_value = tests[test_name][1]
             test_scores.append(test(val, threshold_value))
+    #print('>>>', test_scores)
     return False not in test_scores
 
 
 def language_score(tokens: Counter, frequent_words: set) -> float:
     """This score measures what percentage of tokens are in a given list of
     frequent words. Returns a floating number between 0 and 1. This score
-    tends to be below 0.1 when the text is not English or when it is more
-    like a listing of results."""
+    tends to be low when the text is not English or when it is more like a
+    listing of results."""
     total_tokens = sum(tokens.values())
     in_frequent_words = sum([count for token, count in tokens.items()
                              if token in frequent_words])

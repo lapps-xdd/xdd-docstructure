@@ -24,7 +24,7 @@ DOCUMENT_TESTS = {
 }
 
 PARAGRAPH_TESTS = {
-    'language': (utils.larger, 0.2),
+    'language': (utils.larger, 0.3),
     'average_line_length': (utils.larger, 10),
     'average_token_length': (utils.larger, 4),
     'singletons_per_token': (utils.smaller, 0.1)}
@@ -41,7 +41,17 @@ class Documents:
             self.text_dir = fh.readline().split()[2]
             self.scpa_dir = fh.readline().split()[2]
             self.names = [name.strip() for name in fh if not name.startswith('#')]
-        self.documents = (self.make_doc(name) for name in self.names)
+        self.initialize_documents()
+
+    def initialize_documents(self):
+        # using a generator because there could be many documents
+        self.documents = (
+            Document(
+                name,
+                self.text_filename(name),
+                self.scpa_filename(name),
+                self.output_filename(name))
+            for name in self.names)
 
     def __iter__(self):
         return iter(self.documents)
@@ -49,12 +59,14 @@ class Documents:
     def __str__(self):
         return f'<Documents data_dir={self.data_dir} size={len(self.names)}>'
 
-    def make_doc(self, name):
-        text_file = "%s.txt" % name
-        scpa_file = "%s_input.pdf.json" % name
-        text_path = os.path.join(self.text_dir, text_file)
-        scpa_path = os.path.join(self.scpa_dir, scpa_file)
-        return Document(name, text_path, scpa_path)
+    def scpa_filename(self, name: str):
+        return os.path.join(self.scpa_dir, f"{name}_input.pdf.json")
+
+    def text_filename(self, name: str):
+        return os.path.join(self.text_dir, f"{name}.txt")
+
+    def output_filename(self, name: str):
+        return os.path.join(self.data_dir, f"{name}.json")
 
     def write_output(self):
         if not os.path.exists(self.data_dir):
@@ -74,12 +86,12 @@ class Documents:
             fh.write('<html>\n<head>\n</head>\n<body>\n')
             fh.write('<table width="100%" height="100%" cellspacing="10">\n')
             fh.write('<tr>\n')
-            fh.write('<td valign="top" width="30%" height="100%">\n')
+            fh.write('<td valign="top" width="40%" height="100%">\n')
             fh.write('<table cellpadding=5 cellspacing=0 border=1 width="100%">\n')
             self._write_domain_name(fh)
             self._write_table_headers(fh)
-            # we recreate the generator because it has already been used for printing output
-            self.documents = (self.make_doc(name) for name in self.names)
+            # recreate the generator because it was already used to print output
+            self.initialize_documents()
             for i, doc in enumerate(self):
                 doc.write_characteristics(fh, i)
                 doc.write_analysis(self.html_dir, i)
@@ -90,14 +102,14 @@ class Documents:
 
     def _write_domain_name(self, fh):
         fh.write('<tr>\n')
-        fh.write('  <td style="font-size: larger" colspan=11><b>%s</b></td>\n' % os.path.basename(self.html_dir))
+        fh.write('  <td style="font-size: larger" colspan=12><b>%s</b></td>\n' % os.path.basename(self.html_dir))
         fh.write('</tr>\n')
 
     @staticmethod
     def _write_table_headers(fh):
         fh.write('<tr>\n')
-        for header in ('n', 'document', 'links', 'size',
-                       'lang', 'rxiv', '#s', 'avg(s)', 'h/s', 'ah', 'asp'):
+        for header in ('n', 'document', 'links', 'size', 'text',
+                       'lang', 'rxiv', '#s', 'avg(s)', 'h/s','ah', 'asp'):
             fh.write('  <td>%s</td>\n' % header)
         fh.write('</tr>\n')
 
@@ -122,12 +134,13 @@ class Documents:
 
 class Document:
 
-    def __init__(self, name: str, text_file: str, scpa_file: str):
+    def __init__(self, name: str, text_file: str, scpa_file: str, out_file: str):
         """Created from the name of the document ("5cd7d9e40b45c76caf88d812")
         and the locations of the text file and the ScienceParse file."""
         self.name = name
-        self.text_file = text_file
-        self.scpa_file = scpa_file
+        self.text_file = os.path.abspath(text_file)
+        self.scpa_file = os.path.abspath(scpa_file)
+        self.out_file = os.path.abspath(out_file)
         with open(text_file) as fh:
             self.content = fh.read()
         self.paras = [Paragraph(p, self) for p in self.content.split("\n\n")]
@@ -142,6 +155,8 @@ class Document:
         self.scores = DocumentScores(self)
         self.link_paragraphs()
         self.parse_paragraphs()
+        # this will be filled in when the output string is created
+        self.output_size = None
 
     def __str__(self):
         abstract = ' heur_abstract' if self.abstract else ''
@@ -190,6 +205,7 @@ class Document:
 
     def is_useful(self):
         """Return True if all the tests defined for the scores return True."""
+        #print('DOC', self)
         return utils.run_tests(self.tests, self.scores)
 
     def write_characteristics(self, fh, i: int):
@@ -201,11 +217,14 @@ class Document:
         # fh.write(f'  <td{color_mark(self)}>{self.name}</td>\n')
         fh.write(f'  <td>{self.name}</td>\n')
         fh.write(f'  <td>\n')
-        fh.write(f'    <a href="{self.name}.html" target="doc">parse</a>\n')
         fh.write(f'    <a href="{self.text_file}" target="doc">text</a>\n')
         fh.write(f'    <a href="{self.scpa_file}" target="doc">scpa</a>\n')
+        fh.write(f'    <a href="{self.out_file}" target="doc">out</a>\n')
+        fh.write(f'    <a href="{self.name}.html" target="doc">html</a>\n')
         fh.write(f'  </td>\n')
         # size = int((len(self)/1000))
+        outsize = int(os.path.getsize(self.out_file) / 1000)
+        fh.write(utils.td(f"{outsize:d}K", align='right'))
         utils.write_scores(fh, self.tests, self.scores)
         fh.write(utils.td("&#10003;" if self.has_abstract() else "&nbsp;"))
         fh.write(utils.td("&#10003;" if self.has_abstract_scpa() else "&nbsp;"))
@@ -234,9 +253,11 @@ class Document:
 
     def write_data(self, directory: str):
         morsels = Morsels(self)
-        file_name = os.path.join(directory, self.name + '.json')
-        with open(file_name, 'w') as fh:
-            fh.write(json.dumps(morsels.as_json(), indent=4))
+        #file_name = os.path.join(directory, self.name + '.json')
+        with open(self.out_file, 'w') as fh:
+            output = json.dumps(morsels.as_json(), indent=4)
+            self.output_size = len(output)
+            fh.write(output)
 
 
 @dataclass()
@@ -318,6 +339,7 @@ class Paragraph:
     def is_useful(self):
         """Return True if the paragraph is an abstract or if all the tests
         defined for the scores return True."""
+        #print('PAR', self, self.content[:100])
         return self.is_abstract or utils.run_tests(self.tests, self.scores)
 
     def write_html(self, fh):
@@ -365,6 +387,11 @@ class ParagraphScores:
         self.average_line_length = paragraph.average_line_length()
         self.average_token_length = paragraph.average_token_length()
         self.singletons_per_token = paragraph.singletons_per_token()
+
+    def __str__(self):
+        return (
+            f"<ParagraphScores lan={self.language:.2f} ll={self.average_line_length:.2f}"
+            + f" tl={self.average_token_length:.2f} st={self.singletons_per_token:.2f}>")
 
 
 class ScpaDocument:
@@ -423,14 +450,18 @@ class Morsels:
     """Picking the best available data from the document, choosing from the
     ScienceParse document and the heuristics."""
 
+    # TODO: why is this not using the tests?
+
     def __init__(self, doc: Document):
         self.doc = doc
         self.title = doc.scpa_doc.title
         self.abstract = None
         self.sections = []
         if doc.scores.section_count > 1 and doc.scores.section_length < 10000:
+            # use SCPA analysis if the sections are not too long
             self.mode = 'scpa'
         else:
+            # otherwise go with the text
             self.mode = 'text' if doc.scores.language > 0.2 else 'none'
         # self.pp()
         if self.mode in ('scpa', 'text'):
@@ -439,15 +470,21 @@ class Morsels:
             for section in doc.scpa_doc.sections:
                 tokens = Counter(section['text'].split())
                 language = utils.language_score(tokens, FREQUENT_ENGLISH_WORDS)
-                if language > 0.2:
+                if language > 0.3:
                     self.sections.append(
                         {'source': 'scpa',
                          'heading': section['heading'],
                          'text': section['text']})
         elif self.mode == 'text':
             for para in doc.paras:
+                # TODO: some code potentially useful for more fine-grained filtering
+                #print('\n'); print(para, para.scores); print()
+                #print(para.content.strip()); print()
+                #for line in para.content.split('\n'):
+                #    p = Paragraph(line, self.doc)
+                #    print(f"\t{p.scores}\t{line[:120]}")
                 language = utils.language_score(para.tokens, FREQUENT_ENGLISH_WORDS)
-                if language > 0.2:
+                if language > 0.3:
                     self.sections.append(
                         {'source': 'text',
                          'heading': None,

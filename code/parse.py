@@ -42,6 +42,7 @@ Does not do stand-off annotation of the text.
 
 """
 
+# TODO: maybe add pargraphs line-by-line and filter for language score
 # TODO: for the singletons, it often happens with ScienceParse that highlighted
 #       text has spaces added (for example: "i n t r o d u c t i o n"), may want
 #       to find a way to undo this
