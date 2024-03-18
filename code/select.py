@@ -1,8 +1,8 @@
 """Document selection from XDD data drop
 
-$ python3 select.py DIRECTORY COUNT NAME
+$ python3 select.py DIRECTORY NAME COUNT
 
-This selects a COUNT random documents from DIRECTORY.
+This selects COUNT random documents from DIRECTORY and writes output to /lists.
 
 This assumes that DIRECTORY has subdirectories named text and scienceparse. The
 selection is made from the text documents and the .txt extension if there is one
@@ -30,8 +30,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Select xDD files')
     parser.add_argument('data', help="data directory")
-    parser.add_argument('count', help="number of documents to select")
     parser.add_argument('name', help="basename for the output file")
+    parser.add_argument('count', help="number of documents to select")
     return parser.parse_args()
 
 

@@ -253,7 +253,6 @@ class Document:
 
     def write_data(self, directory: str):
         morsels = Morsels(self)
-        #file_name = os.path.join(directory, self.name + '.json')
         with open(self.out_file, 'w') as fh:
             output = json.dumps(morsels.as_json(), indent=4)
             self.output_size = len(output)
